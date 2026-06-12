@@ -1,0 +1,36 @@
+name: Daily Papers
+
+on:
+  schedule:
+    - cron: '0 4 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Prepare config
+        run: cp config.example.yaml config.yaml
+
+      - name: Run daily pipeline
+        run: python -m src.main
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+
+      - name: Commit seen papers cache
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: update seen papers cache'
+          file_pattern: 'seen_papers.json'
