@@ -13,7 +13,7 @@ All commands below assume the venv is active.
 ## Run Tests
 
 ```bash
-pytest tests/ -v                          # all 181 tests
+pytest tests/ -v                          # all 230 tests
 pytest tests/ -v -m unit                  # skip integration
 pip install pytest-cov && pytest tests/ --cov=src --cov-fail-under=95
 ```
@@ -49,7 +49,8 @@ src/
 ├── main.py                # daily pipeline entrypoint
 ├── chat/
 │   ├── engine.py          # conversation agent (system prompt + streaming + actions)
-│   └── terminal.py        # stdlib TUI (ANSI + readline + streaming output)
+│   ├── screen.py          # ANSI Screen class (incremental rendering, no full clears)
+│   └── terminal.py        # TUI using Screen (ANSI + readline + streaming output)
 ├── pipeline/
 │   ├── fetcher.py         # arXiv API + ArxivPaper + file cache (.cache/)
 │   ├── filter.py          # keyword_prefilter (regex) + chat_final_score (LLM pro)
@@ -75,6 +76,17 @@ send_email()                 Gmail SMTP
     ↓
 save_seen_ids()              seen_papers.json
 ```
+
+### TUI
+
+- `Screen` class (`chat/screen.py`) manages incremental ANSI rendering — no `_clear_screen()`.
+  - `render_header()` prints config once (no-op on subsequent calls).
+  - `show_thinking()` / `hide_thinking()` display/dismiss "Thinking..." indicator.
+  - `write()` / `writeln()` stream tokens incrementally.
+  - `show_actions()` prints action results with icons.
+  - `show_config_status()` prints compact status bar after config changes.
+- `_stream_ai_response()` accepts optional `screen` parameter. Reasoning content is suppressed.
+- `httpx` logger set to `WARNING` in all entry points (`main.py`, `setup.py`, `update.py`).
 
 ### Config
 
