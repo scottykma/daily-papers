@@ -3,6 +3,7 @@ import os
 
 from src.config import get, save
 from src.chat.engine import build_system_prompt, execute_action, parse_response_stream
+from src.chat.screen import Screen, _action_icon, _bold, _dim, _green, _cyan, _yellow
 
 logger = logging.getLogger(__name__)
 
@@ -12,26 +13,6 @@ SLASH_COMMANDS = {
     "/cats": "set_categories", "/score": "set_min_score",
     "/max": "set_max_papers",
 }
-
-
-def _bold(s: str) -> str:
-    return f"\033[1m{s}\033[0m"
-
-
-def _dim(s: str) -> str:
-    return f"\033[2m{s}\033[0m"
-
-
-def _green(s: str) -> str:
-    return f"\033[32m{s}\033[0m"
-
-
-def _cyan(s: str) -> str:
-    return f"\033[36m{s}\033[0m"
-
-
-def _yellow(s: str) -> str:
-    return f"\033[33m{s}\033[0m"
 
 
 def _clear_screen() -> None:
@@ -83,18 +64,6 @@ def _parse_slash_command(user_input: str) -> dict | None:
         except (ValueError, IndexError):
             val = None
         return {"action": action_name, "value": val}
-    return None
-
-
-def _action_icon(action: str) -> str:
-    icons = {
-        "add_keywords": "\u2705", "remove_keywords": "\U0001f5d1\ufe0f",
-        "add_exclude": "\U0001f6ab", "remove_exclude": "\u267b\ufe0f",
-        "add_categories": "\U0001f4c2", "remove_categories": "\U0001f4c2",
-        "set_categories": "\U0001f4c2", "set_max_papers": "\U0001f4ca",
-        "set_min_score": "\U0001f3af", "suggest": "\U0001f4a1", "none": "\u2139\ufe0f",
-    }
-    return icons.get(action, "\u2022")
 
 
 def _print_header() -> None:
@@ -127,39 +96,46 @@ def _print_help() -> None:
     print()
 
 
-def _stream_ai_response(messages: list[dict]) -> None:
-    printed_reasoning = 0
+def _stream_ai_response(messages: list[dict], screen: Screen | None = None) -> None:
     printed_text = 0
-    final_actions = []
     final_chat = ""
+    final_actions = []
+
+    if screen is not None:
+        screen.show_thinking()
 
     try:
         for reasoning, text, chat, actions, is_final in parse_response_stream(messages):
-            if len(reasoning) > printed_reasoning:
-                new = reasoning[printed_reasoning:]
-                printed_reasoning = len(reasoning)
-                print(_dim(new), end="", flush=True)
             if len(text) > printed_text:
                 new = text[printed_text:]
                 printed_text = len(text)
-                if printed_reasoning and printed_text == len(new):
-                    print()
-                print(new, end="", flush=True)
+                if screen is not None:
+                    screen.write(new)
+                else:
+                    print(new, end="", flush=True)
+
             if is_final:
                 final_chat = chat
                 final_actions = actions
     except Exception:
         raise
 
-    if printed_text:
-        print()
+    if screen is not None:
+        screen.writeln()
+    else:
+        if printed_text:
+            print()
 
     if final_actions:
-        print()
         for action in final_actions:
             results = execute_action(action)
-            for _color, msg in results:
-                print(f"    {_action_icon(action.get('action', ''))} {msg}")
+            if screen is not None:
+                screen.show_actions(action, results)
+            else:
+                for _color, msg in results:
+                    print(f"    {_action_icon(action.get('action', ''))} {msg}")
+        if screen is not None and final_actions:
+            screen.show_config_status()
 
     messages.append({"role": "assistant", "content": final_chat})
 
@@ -171,10 +147,13 @@ def run_tui(initial_messages: list[dict] | None = None) -> None:
     if initial_messages:
         messages = initial_messages + messages[1:]
 
-    while True:
-        _clear_screen()
-        _print_header()
+    screen = Screen()
+    screen.render_header()
 
+    if initial_messages:
+        screen.render_message_history(initial_messages)
+
+    while True:
         try:
             user_input = input("\033[32m> \033[0m").strip()
         except (EOFError, KeyboardInterrupt):
@@ -197,28 +176,24 @@ def run_tui(initial_messages: list[dict] | None = None) -> None:
             action = slash_action
             if action.get("action") == "show_help":
                 _print_help()
-                input(_dim("Press Enter to continue..."))
                 continue
             if action.get("action") == "show_config":
                 _print_header()
-                input(_dim("Press Enter to continue..."))
                 continue
             results = execute_action(action)
             for _color, msg in results:
                 print(f"  {_action_icon(action.get('action', ''))} {msg}")
-            print()
-            input(_dim("Press Enter to continue..."))
+            screen.show_config_status()
             continue
 
         messages[0] = {"role": "system", "content": build_system_prompt()}
         messages.append({"role": "user", "content": user_input})
 
         try:
-            _stream_ai_response(messages)
-            print()
-            input(_dim("Press Enter to continue..."))
+            _stream_ai_response(messages, screen)
         except Exception as e:
             print(f"\n  {_yellow('Error:')} {e}\n")
-            input(_dim("Press Enter to continue..."))
+            print(_dim("Press Enter to continue..."))
+            input("")
             if messages and messages[-1]["role"] == "user":
                 messages.pop()

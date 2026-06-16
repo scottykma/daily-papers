@@ -252,6 +252,86 @@ class TestRunTui:
         run_tui()
         assert "agent" not in get("interests.keywords_include")
 
+    def test_slash_exclude_executes(self, temp_config_dir, monkeypatch):
+        inputs = iter(["/exclude nlp", "", "quit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        from src.config import get
+        run_tui()
+        assert "nlp" in get("interests.keywords_exclude")
+
+    def test_slash_unexclude_executes(self, temp_config_dir, monkeypatch):
+        inputs = iter(["/unexclude survey", "", "quit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        from src.config import get
+        run_tui()
+        assert "survey" not in get("interests.keywords_exclude")
+
+    def test_slash_cats_executes(self, temp_config_dir, monkeypatch):
+        inputs = iter(["/cats cs.CV", "", "quit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        from src.config import get
+        run_tui()
+        assert get("interests.categories") == ["cs.CV"]
+
+    def test_slash_score_valid_executes(self, temp_config_dir, monkeypatch):
+        inputs = iter(["/score 5", "", "quit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        from src.config import get
+        run_tui()
+        assert get("daily.min_relevance_score") == 5
+
+    def test_slash_max_executes(self, temp_config_dir, monkeypatch):
+        inputs = iter(["/max 20", "", "quit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        from src.config import get
+        run_tui()
+        assert get("daily.max_papers") == 20
+
+    def test_slash_show_after_add(self, temp_config_dir, monkeypatch, capsys):
+        inputs = iter(["/add diffusion", "", "/show", "", "quit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        run_tui()
+        out = capsys.readouterr().out
+        assert "diffusion" in out
+
+    def test_quit_alias_q(self, temp_config_dir, monkeypatch, capsys):
+        inputs = iter(["q"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        run_tui()
+        out = capsys.readouterr().out
+        assert "Saved to config.yaml" in out
+
+    def test_quit_alias_exit(self, temp_config_dir, monkeypatch, capsys):
+        inputs = iter(["exit"])
+        monkeypatch.setattr("builtins.input", lambda prompt=None: next(inputs))
+        monkeypatch.setattr("src.chat.terminal._init_readline", lambda: None)
+        monkeypatch.setattr("src.chat.terminal._save_readline", lambda: None)
+        from src.chat.terminal import run_tui
+        run_tui()
+        out = capsys.readouterr().out
+        assert "Saved to config.yaml" in out
+
     def test_streaming_delta_print(self, temp_config_dir, mock_env, monkeypatch, capsys):
         def _fake_stream(messages):
             yield "think", "Hel", "", [], False
@@ -271,10 +351,31 @@ class TestRunTui:
         _stream_ai_response(messages)
 
         out = capsys.readouterr().out
-        assert "think" in out
-        assert "ing..." in out
         assert "Hel" in out
         assert "world" in out
+
+    def test_streaming_with_screen_shows_thinking(self, temp_config_dir, mock_env, monkeypatch, capsys):
+        def _fake_stream(messages):
+            yield "thinking...", "", "", [], False
+            yield "thinking...", "Hi there", "Hi there", [], True
+
+        monkeypatch.setattr("src.chat.terminal.parse_response_stream", _fake_stream)
+
+        from src.chat.terminal import _stream_ai_response
+        from src.chat.engine import build_system_prompt
+        from src.chat.screen import Screen
+
+        messages = [
+            {"role": "system", "content": build_system_prompt()},
+            {"role": "user", "content": "hello"},
+        ]
+
+        screen = Screen()
+        _stream_ai_response(messages, screen)
+
+        out = capsys.readouterr().out
+        assert "Thinking" in out
+        assert "Hi there" in out
 
 
 @pytest.mark.unit
@@ -309,6 +410,52 @@ class TestReadlineHelpers:
 
     def test_save_readline_success(self, monkeypatch):
         _save_readline()
+
+
+@pytest.mark.unit
+class TestStreamAiResponseNullScreen:
+    def test_no_screen_with_actions(self, temp_config_dir, mock_env, monkeypatch, capsys):
+        def _fake_stream(messages):
+            yield "thinking...", "Sure!\n/ADD(DiT)", "Sure!", [{"action": "add_keywords", "keywords": ["DiT"]}], True
+
+        monkeypatch.setattr("src.chat.terminal.parse_response_stream", _fake_stream)
+
+        from src.chat.terminal import _stream_ai_response
+        from src.chat.engine import build_system_prompt
+
+        messages = [
+            {"role": "system", "content": build_system_prompt()},
+            {"role": "user", "content": "add DiT"},
+        ]
+
+        _stream_ai_response(messages)
+
+        out = capsys.readouterr().out
+        assert "Sure" in out
+        assert "ADD" in out
+
+
+@pytest.mark.unit
+class TestReadlineFileNotFound:
+    def test_init_readline_with_file_not_found(self, monkeypatch):
+        import builtins
+        orig = builtins.__import__
+
+        def _raise_fnf(*args):
+            raise FileNotFoundError()
+
+        readline_mock = type("fake_readline", (), {
+            "read_history_file": _raise_fnf,
+        })()
+
+        def fake_import(name, *a, **k):
+            if name == "readline":
+                return readline_mock
+            return orig(name, *a, **k)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+        from src.chat.terminal import _init_readline
+        _init_readline()
 
 
 @pytest.mark.integration

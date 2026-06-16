@@ -142,6 +142,9 @@ def fetch_daily_papers(
     if lookback_days is None:
         lookback_days = get("daily.lookback_days", 1)
 
+    if lookback_days == 1 and datetime.now(timezone.utc).weekday() == 0:
+        lookback_days = 3
+
     if use_cache:
         cached = _load_cache(categories, lookback_days)
         if cached is not None:
