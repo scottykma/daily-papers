@@ -179,7 +179,7 @@ def chat_final_score(
     for i in range(0, len(papers), batch_size):
         batch = papers[i : i + batch_size]
         papers_text = "\n\n".join(
-            f"[{j}] Title: {p.title}\n    Abstract: {p.abstract[:800]}\n    Categories: {', '.join(p.categories)}"
+            f"[{j}] Title: {p.title}\n    Abstract: {p.abstract}\n    Categories: {', '.join(p.categories)}"
             for j, (p, _, _) in enumerate(batch)
         )
         prompt = BATCH_FINAL_PROMPT.format(
@@ -239,7 +239,7 @@ def _fallback_single(client, batch, existing):
     for j, paper in enumerate(batch):
         try:
             resp = client.call(
-                [{"role": "user", "content": f"Rate 0-10.\nTitle: {paper.title}\nAbstract: {paper.abstract[:300]}\nReturn JSON: {{\"score\": int, \"reason\": \"...\"}}"}],
+                [{"role": "user", "content": f"Rate 0-10.\nTitle: {paper.title}\nAbstract: {paper.abstract}\nReturn JSON: {{\"score\": int, \"reason\": \"...\"}}"}],
                 temperature=get("llm.flash_temperature", 0.1),
                 max_tokens=100,
                 thinking=False,
