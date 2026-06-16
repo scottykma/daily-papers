@@ -112,7 +112,7 @@ class TestPrintHeader:
     def test_includes_max_score(self, temp_config_dir, capsys):
         _print_header()
         out = capsys.readouterr().out
-        assert "10" in out
+        assert "20" in out
         assert "7" in out
 
 

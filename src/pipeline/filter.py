@@ -166,7 +166,7 @@ def chat_final_score(
     if min_score is None:
         min_score = get("daily.min_relevance_score", 7)
     if max_papers is None:
-        max_papers = get("daily.max_papers", 10)
+        max_papers = get("daily.max_papers", 20)
     if batch_size is None:
         batch_size = get("llm.pro_batch_size", 8)
 

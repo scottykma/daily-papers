@@ -23,7 +23,7 @@ def temp_config_dir(tmp_path, monkeypatch):
             "email": {"enabled": True, "smtp_host": "smtp.gmail.com", "smtp_port": 587, "timeout": 15},
         },
         "daily": {
-            "max_papers": 10,
+            "max_papers": 20,
             "min_relevance_score": 7,
             "lookback_days": 1,
             "keyword_prefilter_top": 60,

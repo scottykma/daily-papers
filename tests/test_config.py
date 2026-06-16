@@ -41,7 +41,7 @@ class TestConfigGet:
         assert get("user.name") == "Test User"
 
     def test_get_nested(self, temp_config_dir):
-        assert get("daily.max_papers") == 10
+        assert get("daily.max_papers") == 20
 
     def test_get_list(self, temp_config_dir):
         keywords = get("interests.keywords_include")

@@ -58,7 +58,7 @@ class Screen:
         print(f"  {_cyan('Keywords')} ({len(include)}): {', '.join(include) if include else '(none)'}")
         print(f"  {_cyan('Exclude')}  ({len(exclude)}): {', '.join(exclude) if exclude else '(none)'}")
         print(f"  {_cyan('Categories')}: {', '.join(categories) if categories else '(none)'}")
-        print(f"  {_cyan('Max/Day')}: {get('daily.max_papers', 10)}  |  {_cyan('Min Score')}: {get('daily.min_relevance_score', 7)}")
+        print(f"  {_cyan('Max/Day')}: {get('daily.max_papers', 20)}  |  {_cyan('Min Score')}: {get('daily.min_relevance_score', 7)}")
         print()
 
         self._header_printed = True
@@ -101,7 +101,7 @@ class Screen:
         include = get("interests.keywords_include", [])
         exclude = get("interests.keywords_exclude", [])
         categories = get("interests.categories", [])
-        max_papers = get("daily.max_papers", 10)
+        max_papers = get("daily.max_papers", 20)
         min_score = get("daily.min_relevance_score", 7)
         parts = [
             f"{_cyan('Keywords')}: {len(include)}",

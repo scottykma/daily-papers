@@ -106,7 +106,7 @@ def build_system_prompt() -> str:
         f"keywords_include: {get('interests.keywords_include', [])}",
         f"keywords_exclude: {get('interests.keywords_exclude', [])}",
         f"categories: {get('interests.categories', [])}",
-        f"max_papers: {get('daily.max_papers', 10)}",
+        f"max_papers: {get('daily.max_papers', 20)}",
         f"min_score: {get('daily.min_relevance_score', 7)}",
     ]
     return SYSTEM_PROMPT.format(

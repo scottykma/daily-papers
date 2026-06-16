@@ -74,7 +74,7 @@ def _print_header() -> None:
     print(f"  {_cyan('Keywords')} ({len(include)}): {', '.join(include) if include else '(none)'}")
     print(f"  {_cyan('Exclude')}  ({len(exclude)}): {', '.join(exclude) if exclude else '(none)'}")
     print(f"  {_cyan('Categories')}: {', '.join(categories) if categories else '(none)'}")
-    print(f"  {_cyan('Max/Day')}: {get('daily.max_papers', 10)}  |  {_cyan('Min Score')}: {get('daily.min_relevance_score', 7)}")
+    print(f"  {_cyan('Max/Day')}: {get('daily.max_papers', 20)}  |  {_cyan('Min Score')}: {get('daily.min_relevance_score', 7)}")
     print()
 
 

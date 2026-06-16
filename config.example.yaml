@@ -1,24 +1,32 @@
 user:
-  name: Your Name
-  email: your@email.com
+  name: Yukuo Ma
+  email: scottyyyyyma@gmail.com
 profile:
   scholar_url: ''
-  name: ''
-  affiliation: ''
-  interests: []
+  name: Yukuo Ma
+  affiliation: Fudan University
+  interests:
+  - Computer Vision
+  - Generative AI
   recent_papers: []
 interests:
   keywords_include:
-  - large language model
-  - diffusion models
+  - DiT
   - computer vision
+  - generative AI
+  - long horizon
+  - long video generation
+  - memory mechanism for video generation
+  - multi-token prediction
+  - video generation
+  - video/action planning
+  - world action model
   keywords_exclude:
   - natural language processing
-  - reinforcement learning
+  - time series forecasting
   categories:
-  - cs.AI
   - cs.CV
-  - cs.CL
+  - cs.AI
 llm:
   api_key_env: OPENAI_API_KEY
   base_url: https://api.deepseek.com
@@ -43,7 +51,7 @@ notification:
     smtp_port: 587
     timeout: 15
 daily:
-  max_papers: 10
+  max_papers: 20
   min_relevance_score: 5
   lookback_days: 1
   keyword_prefilter_top: 60
